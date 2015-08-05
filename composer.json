@@ -1,0 +1,23 @@
+{
+    "name": "portonefive/tabulator",
+    "description": "",
+    "authors": [
+        {
+            "name": "Jeff Berry",
+            "email": "jeff@portonefive.com"
+        },
+        {
+            "name": "Port One Five",
+            "email": "support@portonefive.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PortOneFive\\Tabulator\\": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
