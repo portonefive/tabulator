@@ -70,7 +70,7 @@ class BladeTableCompiler {
     {
         self::$rowsOpen = true;
 
-        return "<?php foreach (\$__table->rows() as \$__row) : ?>";
+        return "<?php foreach (\$__table->rows() as \$__rowId => \$__row) : ?>";
     }
 
     protected function endrows()
