@@ -2,11 +2,13 @@
 
 use Illuminate\Database\Eloquent\Model;
 
-class Row {
+class Row
+{
 
+    public $href;
+    public $class;
     protected $row;
     protected $columnOutput;
-    public $href;
 
     /**
      * @param Model $row
@@ -25,13 +27,11 @@ class Row {
 
     public function columnOutput($columnId)
     {
-        if ($columnId == '__delete' || $columnId == '__thumbnail')
-        {
+        if ($columnId == '__delete' || $columnId == '__thumbnail') {
             return 'special';
         }
 
-        if (isset($this->columnOutput[$columnId]))
-        {
+        if (isset($this->columnOutput[$columnId])) {
             return $this->columnOutput[$columnId];
         }
 
@@ -41,6 +41,13 @@ class Row {
     public function setHref($link)
     {
         $this->href = $link;
+
+        return $this;
+    }
+
+    public function setClass($class)
+    {
+        $this->class = $class;
 
         return $this;
     }
@@ -55,14 +62,14 @@ class Row {
         return $this->row->__get($key);
     }
 
-    public function __isset($key)
-    {
-        return $this->row->__isset($key);
-    }
-
     public function __set($key, $value)
     {
         $this->row->__set($key, $value);
+    }
+
+    public function __isset($key)
+    {
+        return $this->row->__isset($key);
     }
 
     public function __call($method, $arguments)

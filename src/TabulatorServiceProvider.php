@@ -5,18 +5,18 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use PortOneFive\Tabulator\Pagination\FoundationPresenter;
 
-class TabulatorServiceProvider extends ServiceProvider {
+class TabulatorServiceProvider extends ServiceProvider
+{
 
     public function boot()
     {
-        $this->mergeConfigFrom(__DIR__ . '/config/table.php', 'tabulator');
+        $this->mergeConfigFrom(__DIR__ . '/config/tabulator.php', 'tabulator');
 
         /** @var BladeCompiler $blade */
         $blade = $this->app['view']->getEngineResolver()->resolve('blade')->getCompiler();
 
         $blade->extend(
-            function ($view)
-            {
+            function ($view) {
                 return preg_replace_callback(
                     '/\B@(\w+)([ \t]*)(\( ( (?>[^()]+) | (?3) )* \))?/x',
                     [BladeTableCompiler::class, 'attempt'],
@@ -33,10 +33,12 @@ class TabulatorServiceProvider extends ServiceProvider {
      */
     public function register()
     {
-        Paginator::presenter(
-            function ($paginator) {
-                return new FoundationPresenter($paginator);
-            }
-        );
+        if (config('tabulator.css-framework') == 'foundation') {
+            Paginator::presenter(
+                function ($paginator) {
+                    return new FoundationPresenter($paginator);
+                }
+            );
+        }
     }
 }

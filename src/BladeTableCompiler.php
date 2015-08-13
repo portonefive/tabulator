@@ -11,24 +11,24 @@ class BladeTableCompiler {
         return self::$instance ?: self::$instance = new self;
     }
 
-    protected function table($expression)
+    protected function compileTable($expression)
     {
         $tableClass = config('tabulator.class');
 
         return "<?php \$__table = new $tableClass{$expression}; ?>";
     }
 
-    protected function endtable()
+    protected function compileEndtable()
     {
         return "<?= \$__table->render(); ?>";
     }
 
-    protected function title($expression)
+    protected function compileTitle($expression)
     {
         return "<?php \$__table->title{$expression}; ?>";
     }
 
-    protected function column($expression)
+    protected function compileColumn($expression)
     {
         if (self::$rowsOpen) {
             return "<?php \$__env->startSection{$expression}; ?>";
@@ -37,18 +37,18 @@ class BladeTableCompiler {
         return "<?php \$__table->column{$expression}; ?>";
     }
 
-    protected function endcolumn()
+    protected function compileEndcolumn()
     {
         return "<?php \$__sectionName = \$__env->stopSection(true);
             \$__row->setColumnOutput(\$__sectionName, \$__env->getSections()[\$__sectionName]); ?>";
     }
 
-    protected function control($expression)
+    protected function compileControl($expression)
     {
         return "<?php \$__table->control{$expression}; ?>";
     }
 
-    protected function delete($expression)
+    protected function compileDelete($expression)
     {
         if (empty($expression)) {
             return "<?php \$__table->column('__delete'); ?>";
@@ -57,7 +57,7 @@ class BladeTableCompiler {
         return "<?php \$__row->__set('__delete', {$expression}); ?>";
     }
 
-    protected function thumbnail($expression)
+    protected function compileThumbnail($expression)
     {
         if (empty($expression)) {
             return "<?php \$__table->column('__thumbnail'); ?>";
@@ -66,33 +66,40 @@ class BladeTableCompiler {
         return "<?php \$__row->__set('__thumbnail', {$expression}); ?>";
     }
 
-    protected function rows()
+    protected function compileRows()
     {
         self::$rowsOpen = true;
 
         return "<?php foreach (\$__table->rows() as \$__rowId => \$__row) : ?>";
     }
 
-    protected function endrows()
+    protected function compileEndrows()
     {
         self::$rowsOpen = false;
 
         return "<?php endforeach; ?>";
     }
 
-    protected function href($expression)
+    protected function compileHref($expression)
     {
         return "<?php \$__row->setHref{$expression}; ?>";
     }
 
-    protected function groupby($expression)
+    protected function compileGroupby($expression)
     {
         return "<?php \$__table->groupBy{$expression} ?>";
     }
 
-    protected function sortable($expression)
+    protected function compileSortable($expression)
     {
         return "<?php \$__table->sortable{$expression} ?>";
+    }
+
+    protected function compileClass($expression)
+    {
+        if (self::$rowsOpen) {
+            return "<?php \$__row->setClass{$expression} ?>";
+        }
     }
 
     protected function compileDirective($directive, $expression)
@@ -101,12 +108,12 @@ class BladeTableCompiler {
         {
             self::$tableOpen = $directive == 'table';
         }
-        else if ( ! method_exists($this, $directive) || ! self::$tableOpen)
+        else if ( ! method_exists($this, 'compile' . ucfirst($directive)) || ! self::$tableOpen)
         {
             return false;
         }
 
-        return $this->{$directive}($expression);
+        return $this->{'compile' . ucfirst($directive)}($expression);
     }
 
     public static function attempt($match)
