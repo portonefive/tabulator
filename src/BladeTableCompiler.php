@@ -31,7 +31,8 @@ class BladeTableCompiler {
     protected function compileColumn($expression)
     {
         if (self::$rowsOpen) {
-            return "<?php \$__env->startSection{$expression}; ?>";
+            $expression = '__column_' . trim(trim($expression, '()'), '\'"');
+            return "<?php \$__env->startSection('{$expression}'); ?>";
         }
 
         return "<?php \$__table->column{$expression}; ?>";
@@ -40,7 +41,10 @@ class BladeTableCompiler {
     protected function compileEndcolumn()
     {
         return "<?php \$__sectionName = \$__env->stopSection(true);
-            \$__row->setColumnOutput(\$__sectionName, \$__env->getSections()[\$__sectionName]); ?>";
+            \$__row->setColumnOutput(
+                str_replace('__column_', '', \$__sectionName),
+                \$__env->getSections()[\$__sectionName]
+            ); ?>";
     }
 
     protected function compileControl($expression)
