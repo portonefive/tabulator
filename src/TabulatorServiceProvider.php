@@ -10,7 +10,24 @@ class TabulatorServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        $this->mergeConfigFrom(__DIR__ . '/config/tabulator.php', 'tabulator');
+        $configPath = __DIR__ . '/../config/tabulator.php';
+
+        $this->publishes([$configPath => $this->getConfigPath()], 'config');
+
+        $tableView    = 'resources/views/partial/table.blade.php';
+        $tableRowView = 'resources/views/partial/table-row.blade.php';
+
+        $this->publishes(
+            [
+                __DIR__ . '/../' . $tableView    => app_path($tableView),
+                __DIR__ . '/../' . $tableRowView => app_path($tableRowView)
+            ],
+            'views'
+        );
+
+        $sassFile = 'resources/assets/sass/partial/_table.scss';
+
+        $this->publishes([__DIR__ . '/../' . $sassFile => app_path($sassFile)], 'sass');
 
         /** @var BladeCompiler $blade */
         $blade = $this->app['view']->getEngineResolver()->resolve('blade')->getCompiler();
@@ -33,6 +50,13 @@ class TabulatorServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $configPath = __DIR__ . '/../config/tabulator.php';
+
+        $this->mergeConfigFrom($configPath, 'tabulator');
+
+        TableBuilder::setViewFactory($this->app['view']);
+        TableBuilder::setRequest($this->app['request']);
+
         if (config('tabulator.css-framework') == 'foundation') {
             Paginator::presenter(
                 function ($paginator) {
@@ -40,5 +64,10 @@ class TabulatorServiceProvider extends ServiceProvider
                 }
             );
         }
+    }
+
+    private function getConfigPath()
+    {
+        return config_path('tabulator.php');
     }
 }

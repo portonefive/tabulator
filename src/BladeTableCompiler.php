@@ -28,6 +28,11 @@ class BladeTableCompiler {
         return "<?php \$__table->title{$expression}; ?>";
     }
 
+    protected function compilePaginate($expression)
+    {
+        return "<?php \$__table->paginate{$expression}; ?>";
+    }
+
     protected function compileColumn($expression)
     {
         if (self::$rowsOpen) {
@@ -58,7 +63,7 @@ class BladeTableCompiler {
             return "<?php \$__table->column('__delete'); ?>";
         }
 
-        return "<?php \$__row->__set('__delete', {$expression}); ?>";
+        return "<?php \$__row->setDeleteRoute{$expression}; ?>";
     }
 
     protected function compileThumbnail($expression)
@@ -67,7 +72,7 @@ class BladeTableCompiler {
             return "<?php \$__table->column('__thumbnail'); ?>";
         }
 
-        return "<?php \$__row->__set('__thumbnail', {$expression}); ?>";
+        return "<?php \$__row->setThumbnail{$expression}; ?>";
     }
 
     protected function compileRows()

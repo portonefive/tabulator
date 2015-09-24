@@ -1,0 +1,123 @@
+table.Tabulator {
+
+    &.InputTable {
+
+        td {
+            padding: $form-spacing/8;
+
+            input, select {
+                padding: $form-spacing/4;
+                height: ($input-font-size + ($form-spacing * 1.5) - rem-calc(10));
+                margin-bottom: 0 !important;
+            }
+        }
+    }
+
+    > caption {
+
+        @include clearfix;
+
+        text-align: left;
+        line-height: rem-calc(17) + (rem-calc(10) * 1.6) + .25rem;
+
+        &.table-header {
+            caption-side: top;
+        }
+
+        &.table-footer {
+
+            caption-side: bottom;
+            padding: $form-spacing/2 0;
+
+            > ul.pagination {
+                margin-bottom: 0;
+                float: left;
+            }
+
+            .FilterTableCount {
+                line-height: $pagination-height;
+                color: $monsoon;
+                font-size: $table-row-font-size * .8;
+                float: right;
+            }
+        }
+
+        > a {
+            @include button($padding: rem-calc(8));
+            font-size: rem-calc(10);
+            float: right;
+            margin: $label-padding;
+            margin-right: 0;
+        }
+    }
+
+    width: 100%;
+    //    border-spacing: 0;
+    //    border-collapse: collapse;
+
+    thead {
+        border-bottom: 2px solid $primary-color;
+        border-left: 1px solid $table-head-bg;
+        border-right: 1px solid $table-head-bg;
+        border-top: 1px solid $table-head-bg;
+    }
+
+    .__thumbnail {
+        padding: 0;
+        width: 36px;
+    }
+
+    .__delete {
+
+        padding: 0;
+        text-align: center;
+        width: 36px;
+
+        button {
+            color: scale-color($warning-color, $lightness: 50%);
+            padding: 0;
+            height: 36px;
+            width: 36px;
+            line-height: 36px;
+            background: none;
+            border: none;
+            margin: 0;
+            transition: .3s color;
+
+            &:hover {
+                color: $alert-color;
+            }
+
+            &:focus {
+                outline: none;
+            }
+        }
+    }
+
+    tbody {
+        tr {
+            &:not(.no-data):not(.group-header) {
+                cursor: pointer;
+            }
+
+            &.no-data {
+                td {
+                    text-align: center;
+                }
+            }
+
+            &.group-header {
+
+                background-color: $secondary-color;
+
+                td {
+                    color: darken($off-canvas-label-color, 10%);
+                    font-size: $off-canvas-label-font-size;
+                    font-weight: $off-canvas-label-font-weight;
+                    text-transform: $off-canvas-label-text-transform;
+                    padding: $off-canvas-label-padding;
+                }
+            }
+        }
+    }
+}

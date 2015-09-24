@@ -7,15 +7,18 @@ class Row
 
     public $href;
     public $class;
-    protected $row;
+    public $thumbnail;
+    public $delete;
+
+    protected $data;
     protected $columnOutput;
 
     /**
-     * @param Model $row
+     * @param mixed $data
      */
-    public function __construct(Model $row)
+    public function __construct($data)
     {
-        $this->row = $row;
+        $this->data = (object)$data;
     }
 
     public function setColumnOutput($columnId, $content)
@@ -35,7 +38,21 @@ class Row
             return $this->columnOutput[$columnId];
         }
 
-        return object_get($this->row, $columnId, $this->row{$columnId});
+        return object_get($this->data, $columnId);
+    }
+
+    public function setThumbnail($url)
+    {
+        $this->thumbnail = $url;
+
+        return $this;
+    }
+
+    public function setDeleteRoute($route)
+    {
+        $this->delete = $route;
+
+        return $this;
     }
 
     public function setHref($link)
@@ -54,26 +71,27 @@ class Row
 
     public function usesSoftDeletes()
     {
-        return method_exists($this->row, 'trashed');
+        return $this->isEloquent() && method_exists($this->data, 'trashed');
     }
 
     public function __get($key)
     {
-        return $this->row->__get($key);
+        return object_get($this->data, $key);
     }
 
     public function __set($key, $value)
     {
-        $this->row->__set($key, $value);
+        //
     }
 
     public function __isset($key)
     {
-        return $this->row->__isset($key);
+        return isset($this->data->{$key});
     }
 
-    public function __call($method, $arguments)
+
+    private function isEloquent()
     {
-        return call_user_func_array([$this->row, $method], $arguments);
+        return $this->data instanceof Model;
     }
 }

@@ -1,109 +1,118 @@
 <?php namespace PortOneFive\Tabulator;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\View\Factory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
+use PortOneFive\Tabulator\DataHandlers\CollectionHandler;
+use PortOneFive\Tabulator\DataHandlers\DataHandler;
+use PortOneFive\Tabulator\DataHandlers\PaginationHandler;
+use PortOneFive\Tabulator\DataHandlers\QueryBuilderHandler;
+use PortOneFive\Tabulator\Pagination\FoundationPresenter;
 
 class TableBuilder
 {
+    /**
+     * @var RowCollection
+     */
+    protected $items;
 
     /**
-     * @var string
+     * @var LengthAwarePaginator|null
      */
-    public $title   = null;
-    public $groupBy = false;
+    protected $paginator = null;
 
-    /** @var \Illuminate\View\Factory */
-    protected $view;
-    /**
-     * @var Collection
-     */
-    protected $collection;
     /**
      * @var array
      */
     protected $attributes;
 
-    protected $template = null;
-
-    protected $rowCount          = 0;
-    protected $columns           = [];
-    protected $controls          = [];
-    protected $defaultAttributes = [];
-
-    /** @var LengthAwarePaginator */
-    protected $paginator;
-
-    protected $sortable = false;
+    /**
+     * @var string
+     */
+    protected $title = null;
 
     /**
-     * @param            $resultSet
-     * @param array      $attributes
-     *
-     * @internal param $name
-     * @internal param Collection $collection
+     * @var string|null
      */
-    public function __construct($resultSet, $attributes = [])
+    protected $template = null;
+
+    /**
+     * @var \Illuminate\View\Factory
+     */
+    protected static $viewFactory;
+
+    /**
+     * @var Request
+     */
+    protected static $request;
+
+
+    protected $columns  = [];
+    protected $controls = [];
+
+    /**
+     * @var DataHandler
+     */
+    protected $itemHandler;
+
+    /**
+     * @var array|null
+     */
+    protected $groupBy = null;
+
+    /**
+     * @param RowCollection|Builder|array $items
+     * @param array                       $attributes
+     */
+    public function __construct($items, array $attributes = [])
     {
-        $this->view = app('view');
-
-        if ($resultSet instanceof Collection) {
-            $this->collection = $resultSet;
-        } else if ($resultSet instanceof LengthAwarePaginator) {
-            $this->paginator  = $resultSet;
-            $this->collection = $resultSet->getCollection();
-        } else if ($resultSet instanceof Builder) {
-            $this->collection = $resultSet->get();
-        }
-
-        $this->collection = $this->collection->map(
-            function ($row) {
-                return new Row($row);
-            }
-        );
-
-        $this->rowCount = $this->collection->count();
-
-        $this->attributes = array_merge($this->getDefaultAttributes(), $attributes);
-
-        if ( ! isset($this->attributes['class'])) {
-            $this->attributes['class'] = 'Tabulator';
-        } else {
-            $this->attributes['class'] = 'Tabulator ' . $this->attributes['class'];
-        }
-
-        if (isset($this->attributes['template'])) {
-            $this->template = $this->attributes['template'];
-        }
+        $this->itemHandler = $this->makeItemHandler($items, $attributes);
+        $this->setAttributes($attributes);
     }
 
     protected function getDefaultAttributes()
     {
-        return $this->defaultAttributes;
+        return [];
     }
 
-    public function title($title)
+    /**
+     * @param null $title
+     *
+     * @return $this|string
+     */
+    public function title($title = null)
     {
+        if (empty($title)) {
+            return $this->title;
+        }
+
         $this->title = $title;
 
         return $this;
     }
 
-    public function column($columnId = null, $label = null, $searchable = false, $sortable = false)
+    public function __call($method, array $arguments)
     {
-        $columnId = $columnId ?: str_random(5);
+        if (method_exists($this->itemHandler, $method)) {
+            return call_user_func_array([$this->itemHandler, $method], $arguments);
+        }
 
-        $this->columns[$columnId] = [
-            'id'         => $columnId,
+        throw new \BadMethodCallException('Invalid method: ' . $method);
+    }
+
+    public function column($column = null, $label = null, $searchable = false, $sortable = false)
+    {
+        $column = $column ?: str_random(5);
+
+        $this->columns[$column] = [
+            'id'         => $column,
             'label'      => $label,
             'searchable' => (bool)$searchable,
             'sortable'   => (bool)$sortable
         ];
-
-        if ($sortable == true) {
-            $this->sortable = true;
-        }
 
         return $this;
     }
@@ -112,18 +121,6 @@ class TableBuilder
     {
         return $includeAll ? $this->columns : array_except($this->columns, ['__thumbnail', '__delete']);
     }
-
-    //public function deleteColumn($route, array $routeParams = [])
-    //{
-    //    $this->columns['__delete'] = [
-    //        'id'          => '__delete',
-    //        'label'       => '',
-    //        'route'       => $route,
-    //        'routeParams' => $routeParams
-    //    ];
-    //
-    //    return $this;
-    //}
 
     public function thumbnailColumn()
     {
@@ -135,11 +132,17 @@ class TableBuilder
         return isset($this->columns['__delete']) ? $this->columns['__delete'] : false;
     }
 
-    public function control($route, $label, $attributes = [])
+    /**
+     * @param       $href
+     * @param       $label
+     * @param array $attributes
+     *
+     * @return $this
+     */
+    public function control($href, $label, $attributes = [])
     {
-        //$routeKey = is_array($route) ? $route[0] : $route;
         $this->controls[] = [
-            'route'      => $route,
+            'href'       => $href,
             'label'      => $label,
             'attributes' => $this->attributeArrayToHtmlString($attributes)
         ];
@@ -189,54 +192,71 @@ class TableBuilder
         }
     }
 
-    public function groupBy($columnId, $relationId, $relationTitleColumn = null)
-    {
-        $this->groupBy = [
-            'columnId'              => $columnId,
-            'relationId'            => $relationId,
-            'relationTitleProperty' => $relationTitleColumn
-        ];
-
-        return $this;
-    }
-
     public function controls()
     {
         return $this->controls;
     }
 
-    public function rows()
+    public function items()
     {
-        return $this->collection;
+        return $this->itemHandler->items();
     }
 
-    public function rowCount()
+    /**
+     * @return static
+     */
+    public function rows()
     {
-        return $this->rowCount;
+        return $this->items()->map(
+            function ($row) {
+                return new Row($row);
+            }
+        );
+    }
+
+    /**
+     * @return null|static
+     */
+    public function rowsGrouped()
+    {
+        if ($this->itemHandler->isGrouped()) {
+            return $this->itemHandler->rowsGrouped();
+        }
+
+        return null;
     }
 
     public function render()
     {
-        if ($this->groupBy) {
-            $this->collection = $this->collection->groupBy(
-                function ($row) {
-                    return object_get($row, $this->groupBy['columnId']);
-                }
-            );
-        }
+        //if ($this->isGrouped()) {
+        //    $this->items = $this->items->groupBy(
+        //        function ($row) {
+        //            return object_get($row, $this->groupBy['column']);
+        //        }
+        //    );
+        //}
 
-        $request = Request::capture();
-        if ($this->isPaginated()) {
-            $this->paginator->appends($request->except('page', 'order_by', 'order_direction'));
-        }
-
-        return $this->view->make(
+        return $this->getViewFactory()->make(
             $this->template ?: config('tabulator.template'),
             [
                 'table'   => $this,
                 'request' => Request::capture()
             ]
         )->render();
+    }
+
+    /**
+     * @return null|string
+     */
+    public function renderPaginator()
+    {
+        if ( ! $this->paginator()) {
+            return null;
+        }
+
+        $this->paginator->appends($this->getRequest()->except('page', 'order_by', 'order_direction'));
+
+        return $this->paginator->render(new FoundationPresenter($this->paginator));
     }
 
     /**
@@ -250,7 +270,7 @@ class TableBuilder
     }
 
     /**
-     * @return LengthAwarePaginator
+     * @return Paginator
      */
     public function paginator()
     {
@@ -262,14 +282,78 @@ class TableBuilder
      */
     public function isPaginated()
     {
-        return $this->paginator instanceof LengthAwarePaginator;
+        return $this->paginator !== null;
     }
 
     /**
-     * @return bool
+     * @param mixed $items
+     *
+     * @return DataHandler
      */
-    public function isSortable()
+    public function makeItemHandler($items)
     {
-        return $this->sortable;
+        if ($items instanceof Collection || is_array($items)) {
+            return new CollectionHandler(is_array($items) ? new Collection($items) : $items);
+        }
+
+        if ($items instanceof \Illuminate\Contracts\Pagination\Paginator) {
+            return new PaginationHandler($items);
+        }
+
+        if ($items instanceof Builder) {
+            return new QueryBuilderHandler($items);
+        }
+
+        throw new \InvalidArgumentException('Unexpected value given to TableBuilder');
+    }
+
+    /**
+     * @return Factory
+     */
+    protected static function getViewFactory()
+    {
+        return self::$viewFactory;
+    }
+
+    /**
+     * @param Factory $viewFactory
+     */
+    public static function setViewFactory(Factory $viewFactory)
+    {
+        self::$viewFactory = $viewFactory;
+    }
+
+    /**
+     * @return Factory
+     */
+    protected static function getRequest()
+    {
+        return self::$request;
+    }
+
+    /**
+     * @param Request $request
+     */
+    public static function setRequest(Request $request)
+    {
+        self::$request = $request;
+    }
+
+    /**
+     * @param array $attributes
+     */
+    protected function setAttributes(array $attributes)
+    {
+        $this->attributes = array_merge($this->getDefaultAttributes(), $attributes);
+
+        if ( ! isset($this->attributes['class'])) {
+            $this->attributes['class'] = 'Tabulator';
+        } else {
+            $this->attributes['class'] = 'Tabulator ' . $this->attributes['class'];
+        }
+
+        if (isset($this->attributes['template'])) {
+            $this->template = $this->attributes['template'];
+        }
     }
 }
