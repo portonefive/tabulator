@@ -1,29 +1,17 @@
 <?php namespace PortOneFive\Tabulator;
 
-use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use PortOneFive\Tabulator\Contracts\DataHandler;
 use PortOneFive\Tabulator\DataHandlers\CollectionHandler;
-use PortOneFive\Tabulator\DataHandlers\DataHandler;
 use PortOneFive\Tabulator\DataHandlers\PaginationHandler;
 use PortOneFive\Tabulator\DataHandlers\QueryBuilderHandler;
 use PortOneFive\Tabulator\Pagination\FoundationPresenter;
 
 class TableBuilder
 {
-    /**
-     * @var RowCollection
-     */
-    protected $items;
-
-    /**
-     * @var LengthAwarePaginator|null
-     */
-    protected $paginator = null;
-
     /**
      * @var array
      */
@@ -40,15 +28,9 @@ class TableBuilder
     protected $template = null;
 
     /**
-     * @var \Illuminate\View\Factory
-     */
-    protected static $viewFactory;
-
-    /**
      * @var Request
      */
     protected static $request;
-
 
     protected $columns  = [];
     protected $controls = [];
@@ -59,9 +41,9 @@ class TableBuilder
     protected $itemHandler;
 
     /**
-     * @var array|null
-     */
-    protected $groupBy = null;
+     * @var Collection
+     * */
+    protected $rows;
 
     /**
      * @param RowCollection|Builder|array $items
@@ -197,46 +179,42 @@ class TableBuilder
         return $this->controls;
     }
 
-    public function items()
-    {
-        return $this->itemHandler->items();
-    }
-
     /**
      * @return static
      */
     public function rows()
     {
-        return $this->items()->map(
-            function ($row) {
-                return new Row($row);
-            }
-        );
-    }
-
-    /**
-     * @return null|static
-     */
-    public function rowsGrouped()
-    {
-        if ($this->itemHandler->isGrouped()) {
-            return $this->itemHandler->rowsGrouped();
+        if ($this->rows) {
+            return $this->rows;
         }
 
-        return null;
+        $rows = $this->itemHandler()->rows();
+
+        if ($rows instanceof GroupedCollection) {
+
+            return $rows->map(
+                function ($collection) {
+                    return $this->convertCollectionToRows($collection);
+                }
+            );
+        }
+
+        return $this->convertCollectionToRows($rows);
     }
+
+    public function rowsUngrouped()
+    {
+        if ( ! isset($this->rows)) {
+            $this->rows = $this->rows();
+        }
+
+        return $this->rows instanceof GroupedCollection ? new Collection($this->rows->collapse()) : $this->rows;
+    }
+
 
     public function render()
     {
-        //if ($this->isGrouped()) {
-        //    $this->items = $this->items->groupBy(
-        //        function ($row) {
-        //            return object_get($row, $this->groupBy['column']);
-        //        }
-        //    );
-        //}
-
-        return $this->getViewFactory()->make(
+        return view(
             $this->template ?: config('tabulator.template'),
             [
                 'table'   => $this,
@@ -250,13 +228,13 @@ class TableBuilder
      */
     public function renderPaginator()
     {
-        if ( ! $this->paginator()) {
+        if ( ! $this->itemHandler->isPaginated()) {
             return null;
         }
 
-        $this->paginator->appends($this->getRequest()->except('page', 'order_by', 'order_direction'));
+        $this->itemHandler->paginator()->appends($this->request()->except('page', 'order_by', 'order_direction'));
 
-        return $this->paginator->render(new FoundationPresenter($this->paginator));
+        return $this->itemHandler->paginator()->render(new FoundationPresenter($this->itemHandler()->paginator()));
     }
 
     /**
@@ -270,22 +248,6 @@ class TableBuilder
     }
 
     /**
-     * @return Paginator
-     */
-    public function paginator()
-    {
-        return $this->paginator;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isPaginated()
-    {
-        return $this->paginator !== null;
-    }
-
-    /**
      * @param mixed $items
      *
      * @return DataHandler
@@ -293,10 +255,10 @@ class TableBuilder
     public function makeItemHandler($items)
     {
         if ($items instanceof Collection || is_array($items)) {
-            return new CollectionHandler(is_array($items) ? new Collection($items) : $items);
+            return new CollectionHandler(new Collection($items));
         }
 
-        if ($items instanceof \Illuminate\Contracts\Pagination\Paginator) {
+        if ($items instanceof Paginator) {
             return new PaginationHandler($items);
         }
 
@@ -308,25 +270,9 @@ class TableBuilder
     }
 
     /**
-     * @return Factory
+     * @return Request
      */
-    protected static function getViewFactory()
-    {
-        return self::$viewFactory;
-    }
-
-    /**
-     * @param Factory $viewFactory
-     */
-    public static function setViewFactory(Factory $viewFactory)
-    {
-        self::$viewFactory = $viewFactory;
-    }
-
-    /**
-     * @return Factory
-     */
-    protected static function getRequest()
+    protected static function request()
     {
         return self::$request;
     }
@@ -355,5 +301,27 @@ class TableBuilder
         if (isset($this->attributes['template'])) {
             $this->template = $this->attributes['template'];
         }
+    }
+
+    /**
+     * @return DataHandler
+     */
+    public function itemHandler()
+    {
+        return $this->itemHandler;
+    }
+
+    /**
+     * @param Collection $collection
+     *
+     * @return static
+     */
+    private function convertCollectionToRows(Collection $collection)
+    {
+        return $collection->map(
+            function ($row) {
+                return new Row($row);
+            }
+        );
     }
 }

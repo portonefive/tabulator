@@ -2,11 +2,17 @@
 
 namespace PortOneFive\Tabulator\DataHandlers;
 
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
+use PortOneFive\Tabulator\Contracts\DataHandler;
 use PortOneFive\Tabulator\Row;
 
 class QueryBuilderHandler implements DataHandler
 {
+    /**
+     * @var Paginator
+     */
+    protected $paginator;
 
     /**
      * @var Builder
@@ -14,7 +20,6 @@ class QueryBuilderHandler implements DataHandler
     private $builder;
 
     private $groupBy;
-    private $paginated = false;
 
     /**
      * @param Builder $builder
@@ -27,7 +32,7 @@ class QueryBuilderHandler implements DataHandler
     /**
      * @return \Illuminate\Database\Eloquent\Collection|static[]
      */
-    public function items()
+    public function rows()
     {
         return $this->builder->get()->map(
             function ($row) {
@@ -41,12 +46,15 @@ class QueryBuilderHandler implements DataHandler
      * @param string $pageName
      * @param null   $page
      *
-     * @return void
+     * @param array  $options
+     *
+     * @return $this
      */
-    public function paginate($perPage = 12, $pageName = 'page', $page = null)
+    public function paginate($perPage = 12, $pageName = 'page', $page = null, array $options = [])
     {
-        $this->paginated = true;
-        $this->builder->paginate($perPage, ['*'], $pageName, $page);
+        $this->paginator = $this->builder->paginate($perPage, ['*'], $pageName, $page);
+
+        return $this;
     }
 
     /**
@@ -80,22 +88,7 @@ class QueryBuilderHandler implements DataHandler
      */
     public function groupLabelColumn()
     {
-        return $this->isGrouped() ? (isset($this->groupBy[1]) ? $this->groupBy[1] : $this->groupBy[0]) : null;
-    }
-
-    /**
-     */
-    public function rowsGrouped()
-    {
-        if ($this->isGrouped()) {
-            return $this->items()->groupBy(
-                function ($row) {
-                    return object_get($row, $this->groupBy[0]);
-                }
-            );
-        }
-
-        return null;
+        return $this->isGrouped() ? (! empty($this->groupBy[1]) ? $this->groupBy[1] : $this->groupBy[0]) : null;
     }
 
     /**
@@ -103,7 +96,7 @@ class QueryBuilderHandler implements DataHandler
      */
     public function isPaginated()
     {
-        return $this->paginated;
+        return isset($this->paginator);
     }
 
     /**
@@ -112,5 +105,13 @@ class QueryBuilderHandler implements DataHandler
     public function groupColumn()
     {
         return $this->groupBy[0];
+    }
+
+    /**
+     * @return Paginator
+     */
+    public function paginator()
+    {
+        return $this->paginator;
     }
 }

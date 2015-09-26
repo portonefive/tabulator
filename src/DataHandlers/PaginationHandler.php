@@ -3,6 +3,7 @@
 namespace PortOneFive\Tabulator\DataHandlers;
 
 use Illuminate\Contracts\Pagination\Paginator;
+use PortOneFive\Tabulator\Contracts\DataHandler;
 
 class PaginationHandler implements DataHandler
 {
@@ -13,18 +14,64 @@ class PaginationHandler implements DataHandler
         $this->paginator = $paginator;
     }
 
-    public function items()
+    public function rows()
     {
-        // TODO: Implement rows() method.
+        return $this->paginator()->getCollection();
     }
 
-    public function paginate($perPage = 12, $pageName = 'page', $page = null)
+    public function paginate($perPage = 12, $pageName = 'page', $page = null, array $options = [])
     {
-        // TODO: Implement paginate() method.
     }
 
     public function groupBy($column, $labelColumn = null)
     {
-        // TODO: Implement group() method.
+    }
+
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return $this->paginator()->count();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPaginated()
+    {
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isGrouped()
+    {
+        return false;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function groupLabelColumn()
+    {
+        // TODO: Implement groupLabelColumn() method.
+    }
+
+    /**
+     * @return string|null
+     */
+    public function groupColumn()
+    {
+        // TODO: Implement groupColumn() method.
+    }
+
+    /**
+     * @return Paginator
+     */
+    public function paginator()
+    {
+        return $this->paginator;
     }
 }

@@ -10,6 +10,9 @@ class Row
     public $thumbnail;
     public $delete;
 
+    /**
+     * @var Model|object
+     */
     protected $data;
     protected $columnOutput;
 
@@ -76,6 +79,10 @@ class Row
 
     public function __get($key)
     {
+        if ($this->isEloquent()) {
+            return $this->data->__get($key);
+        }
+
         return object_get($this->data, $key);
     }
 

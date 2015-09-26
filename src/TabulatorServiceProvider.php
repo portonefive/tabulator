@@ -19,15 +19,15 @@ class TabulatorServiceProvider extends ServiceProvider
 
         $this->publishes(
             [
-                __DIR__ . '/../' . $tableView    => app_path($tableView),
-                __DIR__ . '/../' . $tableRowView => app_path($tableRowView)
+                __DIR__ . '/../' . $tableView    => base_path($tableView),
+                __DIR__ . '/../' . $tableRowView => base_path($tableRowView)
             ],
             'views'
         );
 
         $sassFile = 'resources/assets/sass/partial/_table.scss';
 
-        $this->publishes([__DIR__ . '/../' . $sassFile => app_path($sassFile)], 'sass');
+        $this->publishes([__DIR__ . '/../' . $sassFile => base_path($sassFile)], 'sass');
 
         /** @var BladeCompiler $blade */
         $blade = $this->app['view']->getEngineResolver()->resolve('blade')->getCompiler();
@@ -50,11 +50,8 @@ class TabulatorServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $configPath = __DIR__ . '/../config/tabulator.php';
+        $this->mergeConfigFrom(__DIR__ . '/../config/tabulator.php', 'tabulator');
 
-        $this->mergeConfigFrom($configPath, 'tabulator');
-
-        TableBuilder::setViewFactory($this->app['view']);
         TableBuilder::setRequest($this->app['request']);
 
         if (config('tabulator.css-framework') == 'foundation') {

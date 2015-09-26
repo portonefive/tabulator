@@ -1,13 +1,15 @@
 <?php
 
-namespace PortOneFive\Tabulator\DataHandlers;
+namespace PortOneFive\Tabulator\Contracts;
+
+use Illuminate\Contracts\Pagination\Paginator;
 
 interface DataHandler
 {
     /**
      * @return \Illuminate\Database\Eloquent\Collection|static[]
      */
-    public function items();
+    public function rows();
 
     /**
      * @return int
@@ -19,9 +21,11 @@ interface DataHandler
      * @param string $pageName
      * @param null   $page
      *
-     * @return void
+     * @param array  $options
+     *
+     * @return
      */
-    public function paginate($perPage = 12, $pageName = 'page', $page = null);
+    public function paginate($perPage = 12, $pageName = 'page', $page = null, array $options = []);
 
     /**
      * @return bool
@@ -42,17 +46,17 @@ interface DataHandler
     public function isGrouped();
 
     /**
-     */
-    public function rowsGrouped();
-
-    /**
      * @return string|null
      */
     public function groupLabelColumn();
-
 
     /**
      * @return string|null
      */
     public function groupColumn();
+
+    /**
+     * @return Paginator
+     */
+    public function paginator();
 }
