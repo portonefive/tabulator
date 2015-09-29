@@ -106,4 +106,13 @@ class Row
     {
         return $this->data instanceof Model;
     }
+
+    public function __call($method, $arguments)
+    {
+        if (method_exists($this->data, $method)) {
+            return call_user_func_array([$this->data, $method], $arguments);
+        }
+
+        throw new \Exception('Invalid row method');
+    }
 }
