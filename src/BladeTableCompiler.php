@@ -104,6 +104,11 @@ class BladeTableCompiler {
         return "<?php \$__table->sortable{$expression} ?>";
     }
 
+    protected function compileTemplate($expression)
+    {
+        return "<?php \$__table->template{$expression} ?>";
+    }
+
     protected function compileClass($expression)
     {
         if (self::$rowsOpen) {

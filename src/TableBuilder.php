@@ -12,26 +12,23 @@ use PortOneFive\Tabulator\Pagination\FoundationPresenter;
 
 class TableBuilder
 {
-    /**
-     * @var array
-     */
-    protected $attributes;
-
-    /**
-     * @var string
-     */
-    protected $title = null;
-
-    /**
-     * @var string|null
-     */
-    protected $template = null;
 
     /**
      * @var Request
      */
     protected static $request;
-
+    /**
+     * @var array
+     */
+    protected $attributes;
+    /**
+     * @var string
+     */
+    protected $title = null;
+    /**
+     * @var string|null
+     */
+    protected $template = null;
     protected $columns  = [];
     protected $controls = [];
 
@@ -55,9 +52,20 @@ class TableBuilder
         $this->setAttributes($attributes);
     }
 
-    protected function getDefaultAttributes()
+    /**
+     * @param Request $request
+     */
+    public static function setRequest(Request $request)
     {
-        return [];
+        self::$request = $request;
+    }
+
+    /**
+     * @return Request
+     */
+    protected static function request()
+    {
+        return self::$request;
     }
 
     /**
@@ -92,8 +100,8 @@ class TableBuilder
         $this->columns[$column] = [
             'id'         => $column,
             'label'      => $label,
-            'searchable' => (bool)$searchable,
-            'sortable'   => (bool)$sortable
+            'searchable' => (bool) $searchable,
+            'sortable'   => (bool) $sortable
         ];
 
         return $this;
@@ -130,48 +138,6 @@ class TableBuilder
         ];
 
         return $this;
-    }
-
-    /**
-     * @param array $attributes
-     *
-     * @return string
-     */
-    protected function attributeArrayToHtmlString(array $attributes = [])
-    {
-        $html = [];
-
-        // For numeric keys we will assume that the key and the value are the same
-        // as this will convert HTML attributes such as "required" to a correct
-        // form like required="required" instead of using incorrect numerics.
-        foreach ((array)$attributes as $key => $value) {
-            $element = $this->attributeElement($key, $value);
-
-            if ( ! is_null($element)) {
-                $html[] = $element;
-            }
-        }
-
-        return count($html) > 0 ? ' ' . implode(' ', $html) : '';
-    }
-
-    /**
-     * Build a single attribute element.
-     *
-     * @param  string $key
-     * @param  string $value
-     *
-     * @return string
-     */
-    protected function attributeElement($key, $value)
-    {
-        if (is_numeric($key)) {
-            $key = $value;
-        }
-
-        if ( ! is_null($value)) {
-            return $key . '="' . e($value) . '"';
-        }
     }
 
     public function controls()
@@ -211,6 +177,10 @@ class TableBuilder
         return $this->rows instanceof GroupedCollection ? new Collection($this->rows->collapse()) : $this->rows;
     }
 
+    public function template($template = null)
+    {
+        return $template == null ? $this->template : $this->template = $template;
+    }
 
     public function render()
     {
@@ -270,19 +240,58 @@ class TableBuilder
     }
 
     /**
-     * @return Request
+     * @return DataHandler
      */
-    protected static function request()
+    public function itemHandler()
     {
-        return self::$request;
+        return $this->itemHandler;
+    }
+
+    protected function getDefaultAttributes()
+    {
+        return [];
     }
 
     /**
-     * @param Request $request
+     * @param array $attributes
+     *
+     * @return string
      */
-    public static function setRequest(Request $request)
+    protected function attributeArrayToHtmlString(array $attributes = [])
     {
-        self::$request = $request;
+        $html = [];
+
+        // For numeric keys we will assume that the key and the value are the same
+        // as this will convert HTML attributes such as "required" to a correct
+        // form like required="required" instead of using incorrect numerics.
+        foreach ((array) $attributes as $key => $value) {
+            $element = $this->attributeElement($key, $value);
+
+            if ( ! is_null($element)) {
+                $html[] = $element;
+            }
+        }
+
+        return count($html) > 0 ? ' ' . implode(' ', $html) : '';
+    }
+
+    /**
+     * Build a single attribute element.
+     *
+     * @param  string $key
+     * @param  string $value
+     *
+     * @return string
+     */
+    protected function attributeElement($key, $value)
+    {
+        if (is_numeric($key)) {
+            $key = $value;
+        }
+
+        if ( ! is_null($value)) {
+            return $key . '="' . e($value) . '"';
+        }
     }
 
     /**
@@ -301,14 +310,6 @@ class TableBuilder
         if (isset($this->attributes['template'])) {
             $this->template = $this->attributes['template'];
         }
-    }
-
-    /**
-     * @return DataHandler
-     */
-    public function itemHandler()
-    {
-        return $this->itemHandler;
     }
 
     /**

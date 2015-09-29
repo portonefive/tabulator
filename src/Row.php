@@ -21,7 +21,7 @@ class Row
      */
     public function __construct($data)
     {
-        $this->data = (object)$data;
+        $this->data = (object) $data;
     }
 
     public function setColumnOutput($columnId, $content)
@@ -75,6 +75,11 @@ class Row
     public function usesSoftDeletes()
     {
         return $this->isEloquent() && method_exists($this->data, 'trashed');
+    }
+
+    public function trashed()
+    {
+        return $this->usesSoftDeletes() && $this->data->trashed();
     }
 
     public function __get($key)
