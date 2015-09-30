@@ -109,7 +109,12 @@ class TableBuilder
 
     public function columns($includeAll = false)
     {
-        return $includeAll ? $this->columns : array_except($this->columns, ['__thumbnail', '__delete']);
+        return $includeAll ? $this->columns : array_except($this->columns, ['__thumbnail', '__delete', '__drag']);
+    }
+
+    public function dragColumn()
+    {
+        return isset($this->columns['__drag']) ? $this->columns['__drag'] : false;
     }
 
     public function thumbnailColumn()

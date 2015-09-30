@@ -15,6 +15,7 @@ class Row
      */
     protected $data;
     protected $columnOutput;
+    protected $dragContent;
 
     /**
      * @param mixed $data
@@ -70,6 +71,24 @@ class Row
         $this->class = $class;
 
         return $this;
+    }
+
+
+    public function setDragContent($content)
+    {
+        $this->dragContent = $content;
+
+        return $this;
+    }
+
+    public function getDragContent()
+    {
+        return $this->dragContent;
+    }
+
+    public function getClass()
+    {
+        return $this->class;
     }
 
     public function usesSoftDeletes()

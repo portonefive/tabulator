@@ -75,6 +75,15 @@ class BladeTableCompiler {
         return "<?php \$__row->setThumbnail{$expression}; ?>";
     }
 
+    protected function compileDrag($expression)
+    {
+        if (empty($expression)) {
+            return "<?php \$__table->column('__drag'); ?>";
+        }
+
+        return "<?php \$__row->setDragContent{$expression}; ?>";
+    }
+
     protected function compileRows()
     {
         self::$rowsOpen = true;
