@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'class'         => \PortOneFive\Tabulator\TableBuilder::class,
+    'class'         => \PortOneFive\Tabulator\Tabulator::class,
     'template'      => 'partial.table',
     'css-framework' => 'foundation'
 ];

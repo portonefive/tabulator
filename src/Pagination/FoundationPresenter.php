@@ -1,4 +1,6 @@
-<?php namespace PortOneFive\Tabulator\Pagination;
+<?php
+
+namespace PortOneFive\Tabulator\Pagination;
 
 use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
 use Illuminate\Contracts\Pagination\Presenter;

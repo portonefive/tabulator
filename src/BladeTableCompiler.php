@@ -1,14 +1,26 @@
-<?php namespace PortOneFive\Tabulator;
+<?php
 
-class BladeTableCompiler {
+namespace PortOneFive\Tabulator;
+
+class BladeTableCompiler
+{
 
     protected static $tableOpen = false;
     protected static $instance;
-    protected static $rowsOpen = false;
+    protected static $rowsOpen  = false;
 
     public static function getInstance()
     {
         return self::$instance ?: self::$instance = new self;
+    }
+
+    public static function attempt($match)
+    {
+        if ($result = self::getInstance()->compileDirective($match[1], array_get($match, 3))) {
+            $match[0] = $result;
+        }
+
+        return isset($match[3]) ? $match[0] : $match[0] . $match[2];
     }
 
     protected function compileTable($expression)
@@ -20,7 +32,7 @@ class BladeTableCompiler {
 
     protected function compileEndtable()
     {
-        return "<?= \$__table->render(); ?>";
+        return "<?php \$__env->share('__table', \$__table); echo \$__table->render(); ?>";
     }
 
     protected function compileTitle($expression)
@@ -37,6 +49,7 @@ class BladeTableCompiler {
     {
         if (self::$rowsOpen) {
             $expression = '__column_' . trim(trim($expression, '()'), '\'"');
+
             return "<?php \$__env->startSection('{$expression}'); ?>";
         }
 
@@ -88,34 +101,26 @@ class BladeTableCompiler {
     {
         self::$rowsOpen = true;
 
-        return "<?php foreach (\$__table->rowsUngrouped() as \$__rowId => \$__row) : ?>";
+        return "<?php if (\$__table->count() > 0) : foreach (\$__table->rowsUngrouped() as \$__rowId => \$__row) : ?>";
     }
 
     protected function compileEndrows()
     {
         self::$rowsOpen = false;
 
-        return "<?php endforeach; ?>";
+        return "<?php endforeach; endif; ?>";
     }
 
     protected function compileHref($expression)
     {
-        return "<?php \$__row->setHref{$expression}; ?>";
+        if (self::$rowsOpen) {
+            return "<?php \$__row->setHref{$expression}; ?>";
+        }
     }
 
     protected function compileGroupby($expression)
     {
         return "<?php \$__table->groupBy{$expression} ?>";
-    }
-
-    protected function compileSortable($expression)
-    {
-        return "<?php \$__table->sortable{$expression} ?>";
-    }
-
-    protected function compileTemplate($expression)
-    {
-        return "<?php \$__table->template{$expression} ?>";
     }
 
     protected function compileClass($expression)
@@ -125,27 +130,24 @@ class BladeTableCompiler {
         }
     }
 
+    protected function compileSearch($expression)
+    {
+        return "<?php \$__table->setSearchHandler{$expression} ?>";
+    }
+
+    protected function compileFilter($expression)
+    {
+        return "<?php \$__table->setFilterHandler{$expression} ?>";
+    }
+
     protected function compileDirective($directive, $expression)
     {
-        if ($directive == 'table' || $directive == 'endtable')
-        {
+        if ($directive == 'table' || $directive == 'endtable') {
             self::$tableOpen = $directive == 'table';
-        }
-        else if ( ! method_exists($this, 'compile' . ucfirst($directive)) || ! self::$tableOpen)
-        {
+        } else if ( ! method_exists($this, 'compile' . ucfirst($directive)) || ! self::$tableOpen) {
             return false;
         }
 
         return $this->{'compile' . ucfirst($directive)}($expression);
-    }
-
-    public static function attempt($match)
-    {
-        if ($result = self::getInstance()->compileDirective($match[1], array_get($match, 3)))
-        {
-            $match[0] = $result;
-        }
-
-        return isset($match[3]) ? $match[0] : $match[0] . $match[2];
     }
 }
