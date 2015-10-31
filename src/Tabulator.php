@@ -7,10 +7,12 @@ use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Str;
 use JsonSerializable;
+use PhpParser\Node\Expr\AssignOp\Mod;
 use PortOneFive\Tabulator\Contracts\CanFilter;
 use PortOneFive\Tabulator\Contracts\CanSearch;
 use PortOneFive\Tabulator\Contracts\TableSchema;
@@ -58,6 +60,9 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
 
     /** @var string|callable|null */
     protected $rowHref = null;
+
+    /** @var array */
+    private $data = [];
 
     /** @var callable|string */
     private $groupBy;
@@ -125,10 +130,32 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
      */
     public function setModel($model)
     {
-        if ($model instanceof Builder) {
+        if ($model instanceof Collection || is_array($model)) {
 
+            $collection = new Collection($model);
+
+            $collection->map(function ($model) {
+                if ( ! $model instanceof Model) {
+                    throw new \Exception('All elements of array must be an Eloquent Model');
+                }
+            });
+
+            /** @var Model $firstModel */
+            $firstModel = $collection->first();
+
+            $this->setData($collection);
+
+            return $this->setModel(new $firstModel);
+        }
+
+        if ($model instanceof Model) {
+            $this->setQuery($model->query());
+        } else if ($model instanceof Builder) {
             $this->setQuery($model);
             $model = $this->query()->getModel();
+        } else if ($model instanceof Relation) {
+            $this->setQuery($model->getQuery());
+            $model = $model->getRelated();
         } else if (is_string($model)) {
 
             $model = new $model;
@@ -141,6 +168,18 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
         }
 
         $this->model = $model;
+
+        return $this;
+    }
+
+    public function data()
+    {
+        return $this->data;
+    }
+
+    public function setData(Collection $data)
+    {
+        $this->data = $data;
 
         return $this;
     }
@@ -475,6 +514,10 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
      */
     protected function getAndPrepareRows()
     {
+        if ( ! empty($this->data)) {
+            return [$this->prepareRowsForDisplay(new Collection($this->data)), ['total' => count($this->data)]];
+        }
+
         if ($this->isSearchable() && $searchQuery = app('request')->has('q')) {
             $this->schema()->processSearch($this->query(), $searchQuery);
         }
@@ -498,7 +541,8 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
             ];
         } else {
 
-            $rows      = $this->query()->get();
+            $rows = $this->query()->get();
+
             $mergeData = ['total' => $rows->count(),];
         }
 
