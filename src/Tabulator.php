@@ -5,14 +5,13 @@ namespace PortOneFive\Tabulator;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use JsonSerializable;
-use PhpParser\Node\Expr\AssignOp\Mod;
 use PortOneFive\Tabulator\Contracts\CanFilter;
 use PortOneFive\Tabulator\Contracts\CanSearch;
 use PortOneFive\Tabulator\Contracts\TableSchema;
@@ -73,15 +72,15 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
     private $paginate;
 
     /**
-     * @param Model|Builder    $model
-     * @param TableSchema|null $schema
-     * @param array            $options
+     * @param Model|Builder|Collection $model
+     * @param TableSchema|null         $schema
+     * @param array                    $options
      *
      * @throws \Exception
      */
     public function __construct($model, $schema = null, array $options = [])
     {
-        $this->setModel($model);
+        $this->setModel($model, isset($options['model']) ? $options['model']: null);
         $this->setSchema($schema);
 
         if ( ! isset($options['title'])) {
@@ -124,11 +123,12 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * @param Builder|Model|string $model
+     * @param null                 $emptyModel
      *
      * @return $this
      * @throws \Exception
      */
-    public function setModel($model)
+    public function setModel($model, $emptyModel = null)
     {
         if ($model instanceof Collection || is_array($model)) {
 
@@ -141,7 +141,7 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
             });
 
             /** @var Model $firstModel */
-            $firstModel = $collection->first();
+            $firstModel = $collection->first() ?: $emptyModel;
 
             $this->setData($collection);
 
@@ -616,6 +616,7 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
 
             $rows->transform(
                 function ($rowGroup, $label) {
+
                     return [
                         'label' => $label,
                         'data'  => $rowGroup
