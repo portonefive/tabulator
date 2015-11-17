@@ -1,4 +1,6 @@
-<?php namespace PortOneFive\Tabulator;
+<?php
+
+namespace PortOneFive\Tabulator;
 
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
@@ -51,8 +53,6 @@ class TabulatorServiceProvider extends ServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/tabulator.php', 'tabulator');
-
-        TableBuilder::setRequest($this->app['request']);
 
         if (config('tabulator.css-framework') == 'foundation') {
             Paginator::presenter(
