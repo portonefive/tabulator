@@ -60,6 +60,8 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
     /** @var string|callable|null */
     protected $rowHref = null;
 
+    protected $filterValues = [];
+
     /** @var array */
     private $data = [];
 
@@ -80,7 +82,7 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
      */
     public function __construct($model, $schema = null, array $options = [])
     {
-        $this->setModel($model, isset($options['model']) ? $options['model']: null);
+        $this->setModel($model, isset($options['model']) ? $options['model'] : null);
         $this->setSchema($schema);
 
         if ( ! isset($options['title'])) {
@@ -369,18 +371,19 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
 
         return array_merge(
             [
-                'title'       => $this->title(),
-                'searchQuery' => app('request')->get('q'),
-                'requestUri'  => app('request')->getUri(),
-                'path'        => $url,
-                'columns'     => $columns,
-                'controls'    => $this->controls,
-                'paginated'   => false,
-                'total'       => 0,
-                'grouped'     => ! empty($this->groupBy),
-                'data'        => null,
-                'options'     => $this->options,
-                'filters'     => $this->isFilterable() ? $this->schema()->filters() : []
+                'title'        => $this->title(),
+                'searchQuery'  => app('request')->get('q'),
+                'requestUri'   => app('request')->getUri(),
+                'path'         => $url,
+                'columns'      => $columns,
+                'controls'     => $this->controls,
+                'paginated'    => false,
+                'total'        => 0,
+                'grouped'      => ! empty($this->groupBy),
+                'data'         => null,
+                'options'      => $this->options,
+                'filters'      => $this->isFilterable() ? $this->schema()->filters() : [],
+                'filterValues' => $this->filterValues
             ],
             $mergeData,
             ['data' => $rows]
@@ -429,6 +432,16 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
         $this->rowHref = $href;
 
         return $this;
+    }
+
+    public function filterValues()
+    {
+        return $this->filterValues;
+    }
+
+    public function setFilterValues(array $filterValues)
+    {
+        $this->filterValues = $filterValues;
     }
 
     /**
