@@ -10,7 +10,7 @@ trait HasSearch
 
     /**
      * @param Builder $query
-     * @param string   $searchQuery
+     * @param string $searchQuery
      */
     public function processSearch(Builder $query, $searchQuery)
     {
@@ -58,7 +58,7 @@ trait HasSearch
 
     protected function makeSearchMethodName($column)
     {
-        return 'search' . str_replace('_', '', title_case($column));
+        return 'search' . str_replace(['.', '_'], '', title_case($column));
     }
 
     protected function request()
