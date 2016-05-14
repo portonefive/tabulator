@@ -596,6 +596,7 @@ class Tabulator implements Arrayable, Jsonable, JsonSerializable
             function (Model $row) {
 
                 $return = [
+                    'id' => $row->id,
                     '__href' => $this->getRowHref($row),
                 ];
 
