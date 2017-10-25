@@ -209,7 +209,7 @@ class TableBuilder
 
         $this->itemHandler->paginator()->appends($this->request()->except('page', 'order_by', 'order_direction'));
 
-        return $this->itemHandler->paginator()->render(new FoundationPresenter($this->itemHandler()->paginator()));
+        return $this->itemHandler->paginator()->render();
     }
 
     /**
